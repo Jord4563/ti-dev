@@ -1,0 +1,133 @@
+    1 00:0000 -  -  -  -  ; This is Conway's Game of Life! It plays thrugh until you press the [ENTER] key. Kinda cool, huh?
+    2 00:0000 -  -  -  -  ; It doesn't write anything onto the schreen though. It uses the existing screen contents.
+    3 00:0000 -  -  -  -  
+    4 00:0000 -  -  -  -  ; Remember, you can read pixel states just by using AND. Cool , right? If the Z flag s set after using and, the pixel is off. Use NZ!!
+    5 00:0000 -  -  -  -  
+    6 00:0000 -  -  -  -  ; Screen is 96 x 64
+    7 00:0000 -  -  -  -  ; best thought of as 12 columns and 64 rows for the graph buffer
+    8 00:0000 -  -  -  -  ; (because 12 * 8 is 96, and there are 8 bits in a byte. This is more convenient.)
+    9 00:0000 -  -  -  -  
+   10 00:0000 -  -  -  -  ; Remember, 12 bytes (96 bits) per row, and there are 64 rows.
+   11 00:0000 -  -  -  -  
+   15 00:0000 -  -  -  -  #define progStart $9D95
+   16 00:0000 -  -  -  -  #define len 96
+   17 00:0000 -  -  -  -  #define wid 64
+   18 00:0000 -  -  -  -  #define pixCount len * wid
+   19 00:0000 -  -  -  -  .org progStart - 2
+   20 00:9D93 BB 6D -  -  .db t2ByteTok, tAsmCmp
+   21 00:9D95 -  -  -  -  
+   22 00:9D95 -  -  -  -  ; Steps the program should take:
+   23 00:9D95 -  -  -  -  ; 1: For each pixel in PlotSScreen, find out the state of each pixel. Store it in mem.
+   24 00:9D95 -  -  -  -  ; 2: For each pixel in mem, store that pixel in the corresponding slot in PlotSScreen.
+   25 00:9D95 -  -  -  -  ;
+   26 00:9D95 -  -  -  -  ; readStates
+   27 00:9D95 -  -  -  -  ; xCheck:
+   28 00:9D95 -  -  -  -  ; 	0 - can read all pixels in x axis
+   29 00:9D95 -  -  -  -  ;	1 - cannot read left pixels
+   30 00:9D95 -  -  -  -  ;	2 - cannot read right pixels
+   31 00:9D95 -  -  -  -  ; yCheck:
+   32 00:9D95 -  -  -  -  ;	3 - can read all pixels in y axis
+   33 00:9D95 -  -  -  -  ;	4 - cannot read upper pixels
+   34 00:9D95 -  -  -  -  ;	5 - cannot read lower pixels
+   35 00:9D95 -  -  -  -  ; 
+   36 00:9D95 -  -  -  -  ;
+   37 00:9D95 -  -  -  -  ; calculate values of xCheck and yCheck and sre stored in their corresponding mits in readStates.
+   38 00:9D95 -  -  -  -  ;
+   39 00:9D95 -  -  -  -  ;
+   40 00:9D95 -  -  -  -  ;
+   41 00:9D95 -  -  -  -  ;
+   42 00:9D95 -  -  -  -  ;
+   43 00:9D95 -  -  -  -  ;
+   44 00:9D95 -  -  -  -  ;
+   45 00:9D95 -  -  -  -  ;
+   46 00:9D95 -  -  -  -  ;
+   47 00:9D95 EF 70 45 -  b_call(_RunIndicOff)
+   48 00:9D98 -  -  -  -  mainLoop:
+   49 00:9D98 21 00 00 -  	ld hl, 0
+   50 00:9D9B 22 E0 9D -  	ld (curPixelLoc), hl ; start at (0, 0)
+   51 00:9D9E -  -  -  -  byteLoop: ; nested loop that calculates the next generation of pixels and stores it into mem.
+   52 00:9D9E 2A E0 9D -  		ld hl, (curPixelLoc)
+   53 00:9DA1 CD CC 9D -  		call getPixLoc
+   54 00:9DA4 01 40 93 -  		ld bc, PlotSScreen
+   55 00:9DA7 09 -  -  -  		add hl, bc
+   56 00:9DA8 AE -  -  -  		xor (hl)
+   57 00:9DA9 77 -  -  -  		ld (hl), a
+   58 00:9DAA EF 6A 48 -  		b_call(_GrBufCpy)
+   59 00:9DAD 2A E0 9D -  	ld hl, (curPixelLoc)
+   60 00:9DB0 23 -  -  -  	inc hl
+   61 00:9DB1 22 E0 9D -  	ld (curPixelLoc), hl
+   62 00:9DB4 -  -  -  -  	
+   63 00:9DB4 -  -  -  -  	; long check to see if hl is equal to the # of pixels on the screen. (have we reached the end?)
+   64 00:9DB4 -  -  -  -  	; using crude directives for spasm to get little endian and big endian bytes from 6144 
+   65 00:9DB4 -  -  -  -  	
+   66 00:9DB4 EF 18 40 -  	b_call(_GetCSC) ; if [ENTER] key is pressed, stop the program. otherwise, keep on running!
+   67 00:9DB7 FE 09 -  -  	cp skEnter
+   68 00:9DB9 20 01 -  -  	jr nz, continue
+   69 00:9DBB C9 -  -  -  	ret ; that's all, folks!
+   70 00:9DBC -  -  -  -  continue:
+   71 00:9DBC 3A E0 9D -  	ld a, (curPixelLoc) ; little endian
+   72 00:9DBF FE 00 -  -  	cp pixCount & $FF ; truncate # of pixels to little endian (using a bitwise AND on $ of pixels to convert word to byte)
+   73 00:9DC1 20 DB -  -  	jr nz, byteLoop
+   74 00:9DC3 3A E1 9D -  	ld a, (curPixelLoc + 1) ; big endian 
+   75 00:9DC6 FE 18 -  -  	cp pixCount >> %1000 & $FF ; rotate # of pixels 8 bits to the right, and truncate the word into a byte
+   76 00:9DC8 20 D4 -  -  	jr nz, byteLoop
+   77 00:9DCA 18 CC -  -  	jr mainLoop
+   78 00:9DCC -  -  -  -  
+   79 00:9DCC -  -  -  -  getPixLoc:
+   80 00:9DCC -  -  -  -  	; function that gets the bit and byte location of the given pixel, stored in HL
+   81 00:9DCC -  -  -  -  	; returns bitmask in a and byte location in hl.
+   82 00:9DCC -  -  -  -  	; you have to add PlotSScreen to hl or some other memory you want to edit.
+   83 00:9DCC -  -  -  -  	; DESTROYS B AND CARRY
+   84 00:9DCC -  -  -  -  	
+   85 00:9DCC 3E 07 -  -  	ld a, %00000111
+   86 00:9DCE A5 -  -  -  	and l
+   87 00:9DCF 06 03 -  -  	ld b, 3
+   88 00:9DD1 -  -  -  -  rotateLoop:
+   89 00:9DD1 37 -  -  -  	scf
+   90 00:9DD2 3F -  -  -  	ccf ; clear carry to shift hl right 4 bits
+   91 00:9DD3 CB 1C -  -  	rr h ; division by 8
+   92 00:9DD5 CB 1D -  -  	rr l
+   93 00:9DD7 10 F8 -  -  	djnz rotateLoop ; loop 3 times
+   94 00:9DD9 -  -  -  -  	
+   95 00:9DD9 47 -  -  -  	ld b, a
+   96 00:9DDA 3E 80 -  -  	ld a, %10000000 ; default bitmask for a. we are using a bitmask to read the right bit.
+   97 00:9DDC -  -  -  -  bitmaskLoop:
+   98 00:9DDC 0F -  -  -  	rrca
+   99 00:9DDD 10 FD -  -  	djnz bitmaskLoop ; now a holds the bitmask for the pixel.
+  100 00:9DDF -  -  -  -  	
+  101 00:9DDF C9 -  -  -  	ret
+  102 00:9DE0 -  -  -  -  	
+  103 00:9DE0 -  -  -  -  
+  104 00:9DE0 -  -  -  -  
+  105 00:9DE0 00 00 -  -  curPixelLoc: .fill 2
+  106 00:9DE2 00 -  -  -  readStates: .fill 1
+  107 00:9DE3 00 -  -  -  neighborCount: .fill 1
+  108 00:9DE4 -  -  -  -  
+  109 00:9DE4 -  -  -  -  
+  110 00:9DE4 -  -  -  -  	
+  111 00:9DE4 -  -  -  -  mem: ; temporary memory for pixels.
+  112 00:9DE4 00 00 00 00 
+              00 00 00 00 
+              00 00 00 00 
+              00 00 00 00 
+              00 00 00 00 
+              00 00 00 00 
+              00 00 00 00 
+              00 00 00 00 
+              00 00 00 00 
+              00 00 00 00 
+              00 00 00 00 
+              00 00 00 00 
+              00 00 00 00 
+              00 00 00 00 
+              00 00 00 00 
+              00 00 00 00 
+              00 00 00 00 
+              00 00 00 00 
+              00 00 00 00 
+              00 00 00 00 
+              00 00 00 00 
+              00 00 00 00 
+              00 00 00 00 
+              00 00 00 00 
+              00 00 -  -  	.fill len + 2

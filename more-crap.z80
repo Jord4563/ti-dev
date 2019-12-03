@@ -1,0 +1,56 @@
+.nolist
+	#include "ti83plus.inc"
+.list
+#define progStart $9D95
+.org progStart - 2
+.db t2ByteTok, tAsmCmp
+	
+	ld b, $FF
+Loop:
+	ld a, 10
+	ld l, 10
+	call GetPixel
+	XOR (HL)
+	LD (HL), A
+	b_call(_GrBufCpy)
+	
+	ld a, (i)
+	dec a
+	ld (i), a
+	cp 0
+	jp nz, Loop
+
+	ld a, 200
+	ld (i), a
+	
+
+i:
+	.db 100
+
+GetPixel: ; A function I literally copied off the Asm in 28 Days tutorial.
+	LD     H, 0
+	LD     D, H
+	LD     E, L
+	ADD    HL, HL
+	ADD    HL, DE
+	ADD    HL, HL
+	ADD    HL, HL
+
+	LD     E, A
+	SRL    E
+	SRL    E
+	SRL    E
+	ADD    HL, DE
+
+	LD     DE, PlotSScreen
+	ADD    HL, DE
+	
+	AND    7
+	
+	LD     A, $80
+	RET    Z
+	LD     B, A
+pixLoop:
+	RRCA
+	DJNZ   pixLoop
+	RET

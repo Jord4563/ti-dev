@@ -1,0 +1,42 @@
+.nolist
+	#include "ti83plus.inc"
+.list
+#define progStart $9D95
+.org progStart - 2
+.db t2ByteTok, tAsmCmp
+
+GetPixel: ; A function I literally copied off the Asm in 28 Days tutorial. I wrote some notes on here to better my understanding of this program. 
+
+	; (x and y are stored in A and L. resulting address is stored in HL.)
+	; DESTROYS DE AND B
+	
+	LD     H, 0 ; after this segment of code is executed, both HL and DE is equal to L.
+	LD     D, H
+	LD     E, L
+	
+	ADD    HL, HL ; this whole segment of code is to multiply HL by 12. (Think about it for a bit.)
+	ADD    HL, DE
+	ADD    HL, HL
+	ADD    HL, HL
+
+	LD     E, A ; E now holds the y position of the pixel.
+	SRL    E ; division of 8 on E.
+	SRL    E
+	SRL    E ; E now holds the x offset
+	ADD    HL, DE ; add the x offset to the memory address of the pixel.
+
+	LD     DE, PlotSScreen ; add on the PlotSScreen memory address.
+	ADD    HL, DE 
+	
+	; HL now stores the memory address of the BYTE the pixel resides in
+	; we now can find which pixel the bit is stored in the byte, and store it into A.
+	
+	AND    %111 ; We can remove everything but the first 3 bits of the x position to get the location of the bit into A.
+	
+	LD     B, A ; store A into B
+	LD     A, %10000000 ; set bit 7 of A and clear everything else
+	RET    Z  ; no use in looping if A already stores the correct bit! Save processing time!
+pixLoop: ; Now we can shift bit 7 to the right B bits to get a bitmask we can use to read/change that pixel.
+	RRCA
+	DJNZ   pixLoop
+	RET
