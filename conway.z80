@@ -1,7 +1,7 @@
 ; This is Conway's Game of Life! It plays thrugh until you press the [ENTER] key. Kinda cool, huh?
-; It doesn't write anything onto the schreen though. It uses the existing screen contents.
+; It doesn't write anything onto the screen though. It uses the existing screen contents.
 
-; Remember, you can read pixel states just by using AND. Cool , right? If the Z flag s set after using and, the pixel is off. Use NZ!!
+; Remember, you can read pixel states just by using AND. Cool , right? If the Z flag is set after using and, the pixel is off. Use NZ!!
 
 ; Screen is 96 x 64
 ; best thought of as 12 columns and 64 rows for the graph buffer
@@ -44,37 +44,37 @@
 ;
 ;
 ;
-b_call(_RunIndicOff)
+b_call(_RunIndicOff) ; turn off loading bar
 mainLoop:
 	ld hl, 0
 	ld (curPixelLoc), hl ; start at (0, 0)
 byteLoop: ; nested loop that calculates the next generation of pixels and stores it into mem.
-		ld hl, (curPixelLoc)
+		ld hl, (curPixelLoc) ; get pixel locaton
 		call getPixLoc
-		ld bc, PlotSScreen
+		ld bc, PlotSScreen ; add location of screen memory
 		add hl, bc
 		xor (hl)
-		ld (hl), a
-		b_call(_GrBufCpy)
+		ld (hl), a ; store the evaluated pizel
 	ld hl, (curPixelLoc)
 	inc hl
 	ld (curPixelLoc), hl
 	
 	; long check to see if hl is equal to the # of pixels on the screen. (have we reached the end?)
-	; using crude directives for spasm to get little endian and big endian bytes from 6144 
+	; using strange directives for spasm to get little endian and big endian bytes from 6144 
 	
-	b_call(_GetCSC) ; if [ENTER] key is pressed, stop the program. otherwise, keep on running!
-	cp skEnter
-	jr nz, continue
-	ret ; that's all, folks!
-continue:
 	ld a, (curPixelLoc) ; little endian
 	cp pixCount & $FF ; truncate # of pixels to little endian (using a bitwise AND on $ of pixels to convert word to byte)
 	jr nz, byteLoop
 	ld a, (curPixelLoc + 1) ; big endian 
 	cp pixCount >> %1000 & $FF ; rotate # of pixels 8 bits to the right, and truncate the word into a byte
 	jr nz, byteLoop
-	jr mainLoop
+
+	b_call(_GrBufCpy) ; update screen
+
+	b_call(_GetCSC) ; if [ENTER] key is pressed, stop the program. otherwise, keep on running!
+	cp skEnter
+	jr nz, mainLoop
+	ret ; ends the program
 
 getPixLoc:
 	; function that gets the bit and byte location of the given pixel, stored in HL
@@ -96,8 +96,10 @@ rotateLoop:
 	ld a, %10000000 ; default bitmask for a. we are using a bitmask to read the right bit.
 bitmaskLoop:
 	rrca
-	djnz bitmaskLoop ; now a holds the bitmask for the pixel.
-	
+	djnz bitmaskLoop 
+
+	; now a holds the bitmask for the pixel.
+
 	ret
 	
 
