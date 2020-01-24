@@ -49,14 +49,34 @@ mainLoop:
 	ld hl, 0
 	ld (curPixelLoc), hl ; start at (0, 0)
 byteLoop: ; nested loop that calculates the next generation of pixels and stores it into mem.
-		ld hl, (curPixelLoc) ; get pixel locaton
-		call getPixLoc
-		ld bc, PlotSScreen ; add location of screen memory
-		add hl, bc
-
-		;; PIXEL PROCESSING SHOULD HAPPEN HERE. PIXEL IS STORED AT LOCATION H1 WITH BITMASK IN A.
 
 		; find top 3 neighbors
+
+		ld hl, (curPixelLoc) ; get pixel location
+		ld a, len ; load number of pixels in a row
+		or a ; clear carry
+		sbc l, a ; subtract # of pixels in a row to current pixel location
+		sbc h, a ; this basically moves the current pixel location one row up
+		call getPixLoc ; get pixel location. we will do something with the bitmask so that we are reading 3 pixels, not 1.
+		ld b, a
+		rr b
+		jr nz, topRightNextByte
+
+		; if you can read right pixel, add it to bitmask
+
+		xor b
+
+		jr topRightContinue
+
+topRightNextByte: ; if you can't read right pixel, read first bit of next byte and add it to neighborCount
+
+topRightContinue:
+
+
+
+
+
+
 
 		; find bottom 3 neighbors
 
@@ -66,7 +86,7 @@ byteLoop: ; nested loop that calculates the next generation of pixels and stores
 
 		; else if neighborCount = 3, pixel is alive
 
-		; else if neighborCount = 2 and pixel is currently alive, pizel is alive
+		; else if neighborCount = 2 and pixel is currently alive, pixel is alive
 
 		; else, pixel is dead
 
@@ -108,8 +128,7 @@ getPixLoc:
 	and l
 	ld b, 3
 rotateLoop:
-	scf
-	ccf ; clear carry to shift hl right 4 bits
+	or a ; clear carry to shift hl right 4 bits
 	rr h ; division by 8
 	rr l
 	djnz rotateLoop ; loop 3 times
