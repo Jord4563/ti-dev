@@ -53,7 +53,11 @@ byteLoop: ; nested loop that calculates the next generation of pixels and stores
 		call getPixLoc
 		ld bc, PlotSScreen ; add location of screen memory
 		add hl, bc
+
+		;; PIXEL PROCESSING SHOULD HAPPEN HERE. PIXEL IS STORED AT LOCATION H1 WITH BITMASK IN A.
+
 		xor (hl) ; flips the pixel
+
 		ld (hl), a ; store the evaluated pizel
 	ld hl, (curPixelLoc) ; increment pixel location counter to evaluate next pixel
 	inc hl
