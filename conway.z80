@@ -56,9 +56,27 @@ byteLoop: ; nested loop that calculates the next generation of pixels and stores
 
 		;; PIXEL PROCESSING SHOULD HAPPEN HERE. PIXEL IS STORED AT LOCATION H1 WITH BITMASK IN A.
 
-		xor (hl) ; flips the pixel
+		; find top 3 neighbors
 
-		ld (hl), a ; store the evaluated pizel
+		; find bottom 3 neighbors
+
+		; find left and right neighbors
+
+		; if neighborCount < 2, pixel is dead
+
+		; else if neighborCount = 3, pixel is alive
+
+		; else if neighborCount = 2 and pixel is currently alive, pizel is alive
+
+		; else, pixel is dead
+
+		; store pixel in mem
+
+		; get pixel from mem one line up and two pixels to the left, and store it in PlotSScreen. we don't need that pixel anymore. 
+
+		; continue on to next pixel
+
+
 	ld hl, (curPixelLoc) ; increment pixel location counter to evaluate next pixel
 	inc hl
 	ld (curPixelLoc), hl
